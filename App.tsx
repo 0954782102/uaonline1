@@ -126,7 +126,7 @@ const App: React.FC = () => {
           
           <h2 className="text-5xl md:text-7xl font-black mb-6 leading-tight">
             СВЯТКОВА <span className="text-yellow-400 neon-yellow">СУТНІСТЬ</span> <br />
-            <span className="text-3xl md:text-5xl">UA ONLINE 2025</span>
+            <span className="text-3xl md:text-5xl">UA ONLINE 2026</span>
           </h2>
           <p className="text-gray-400 text-lg mb-8 max-w-2xl mx-auto">
             Офіційний портал спільноти. Слідкуй за оновленнями в нашому Telegram та користуйся можливостями Truhan Furry Bot.
@@ -225,7 +225,6 @@ const App: React.FC = () => {
             </div>
             {showAuthModal === 'login' && (
               <p className="mt-4 text-[10px] text-gray-600 text-center italic">
-                Для адмінів: Admin / ArtemProcko
               </p>
             )}
           </div>
