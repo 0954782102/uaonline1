@@ -100,19 +100,28 @@ const App: React.FC = () => {
       return;
     }
 
+    if (password.length < 4) {
+      setError('Пароль повинен бути мінімум 4 символи!');
+      return;
+    }
+
     try {
       const response = await fetch(`${API_BASE}/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, first_name: firstName, password })
+        body: JSON.stringify({ 
+          username: username.toLowerCase().trim(), 
+          first_name: firstName.trim(), 
+          password 
+        })
       });
       
       const data = await response.json();
       if (data.success) {
         const newUser: User = {
-          id: data.user_id,
-          username,
-          first_name: firstName,
+          id: data.user_id || Math.random(),
+          username: username.toLowerCase().trim(),
+          first_name: firstName.trim(),
           isAdmin: false,
           adminLevel: 0
         };
@@ -122,11 +131,13 @@ const App: React.FC = () => {
         setUsername('');
         setFirstName('');
         setPassword('');
+        alert('✅ Реєстрація успішна!');
       } else {
         setError(data.message || 'Помилка реєстрації');
       }
     } catch (err) {
-      setError('Помилка підключення');
+      setError('❌ Помилка підключення до сервера');
+      console.error(err);
     }
   };
 
@@ -134,20 +145,28 @@ const App: React.FC = () => {
     e.preventDefault();
     setError('');
 
+    if (!username || !password) {
+      setError('Заповніть логін та пароль!');
+      return;
+    }
+
     try {
       const response = await fetch(`${API_BASE}/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
+        body: JSON.stringify({ 
+          username: username.toLowerCase().trim(), 
+          password 
+        })
       });
       
       const data = await response.json();
       if (data.success) {
         const loggedUser: User = {
-          id: data.user_id,
-          username: data.username,
-          first_name: data.first_name,
-          isAdmin: data.is_admin,
+          id: data.user_id || Math.random(),
+          username: data.username || username.toLowerCase().trim(),
+          first_name: data.first_name || username,
+          isAdmin: data.is_admin || false,
           adminLevel: data.admin_level || 0
         };
         setUser(loggedUser);
@@ -155,11 +174,13 @@ const App: React.FC = () => {
         setShowAuthModal(null);
         setUsername('');
         setPassword('');
+        alert('✅ Ви успішно увійшли!');
       } else {
         setError(data.message || 'Невірний логін/пароль');
       }
     } catch (err) {
-      setError('Помилка підключення');
+      setError('❌ Помилка підключення до сервера');
+      console.error(err);
     }
   };
 
@@ -569,7 +590,7 @@ const App: React.FC = () => {
 
                     <div className="flex items-center justify-between mb-4 pb-4" style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
                       <div className="flex items-center gap-2 text-gray-400 text-sm">
-                        <UserIcon size={14} />
+                        <Users size={14} />
                         <span>{post.username}</span>
                       </div>
                       <div className="flex items-center gap-2 text-gray-500 text-xs">
@@ -776,11 +797,13 @@ const App: React.FC = () => {
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-2 ml-4">Ім'я</label>
                   <input 
                     type="text" 
-                    className="w-full px-6 py-4 rounded-2xl outline-none transition text-black"
-                    style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)' }}
+                    className="w-full px-6 py-4 rounded-2xl outline-none transition text-black placeholder-gray-500"
+                    style={{ background: 'rgba(255, 255, 255, 0.9)', border: '2px solid rgba(255, 255, 255, 0.3)' }}
                     placeholder="Ваше ім'я..."
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
+                    onFocus={(e) => e.target.style.borderColor = 'rgba(250, 204, 21, 0.8)'}
+                    onBlur={(e) => e.target.style.borderColor = 'rgba(255, 255, 255, 0.3)'}
                     required
                   />
                 </div>
@@ -790,11 +813,13 @@ const App: React.FC = () => {
                 <label className="block text-xs font-bold text-gray-500 uppercase mb-2 ml-4">Логін (нік)</label>
                 <input 
                   type="text" 
-                  className="w-full px-6 py-4 rounded-2xl outline-none transition text-black"
-                  style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)' }}
+                  className="w-full px-6 py-4 rounded-2xl outline-none transition text-black placeholder-gray-500"
+                  style={{ background: 'rgba(255, 255, 255, 0.9)', border: '2px solid rgba(255, 255, 255, 0.3)' }}
                   placeholder="Введіть ваш нік..."
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
+                  onFocus={(e) => e.target.style.borderColor = 'rgba(250, 204, 21, 0.8)'}
+                  onBlur={(e) => e.target.style.borderColor = 'rgba(255, 255, 255, 0.3)'}
                   required
                 />
               </div>
@@ -803,11 +828,13 @@ const App: React.FC = () => {
                 <label className="block text-xs font-bold text-gray-500 uppercase mb-2 ml-4">Пароль</label>
                 <input 
                   type="password" 
-                  className="w-full px-6 py-4 rounded-2xl outline-none transition text-black"
-                  style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)' }}
+                  className="w-full px-6 py-4 rounded-2xl outline-none transition text-black placeholder-gray-500"
+                  style={{ background: 'rgba(255, 255, 255, 0.9)', border: '2px solid rgba(255, 255, 255, 0.3)' }}
                   placeholder="********"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  onFocus={(e) => e.target.style.borderColor = 'rgba(250, 204, 21, 0.8)'}
+                  onBlur={(e) => e.target.style.borderColor = 'rgba(255, 255, 255, 0.3)'}
                   required
                 />
               </div>
