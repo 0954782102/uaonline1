@@ -358,7 +358,7 @@ export default function App() {
             <button onClick={() => { setPage('home'); setMenuOpen(false); }} className="flex items-center gap-4"><Home /> Головна</button>
             <button onClick={() => { setPage('posts'); setMenuOpen(false); }} className="flex items-center gap-4"><Newspaper /> Новини</button>
             {user && <button onClick={() => { setPage('submit'); setMenuOpen(false); }} className="flex items-center gap-4 text-yellow-400"><Zap /> Надіслати</button>}
-            {user?.is_admin && <button onClick={() => { setPage('moderation'); setMenuOpen(false); }} className="flex items-center gap-4 text-yellow-400">🛡️ Модерація ({pendingPosts.length})</button>}
+            {user?.is_admin && <button onClick={() => { setPage('moderation'); setMenuOpen(false); }} className="flex items-center gap-4 text-yellow-400">🛡️ Модерація</button>}
             {user ? (
               <button onClick={() => { handleLogout(); setMenuOpen(false); }} className="flex items-center gap-4 text-red-500"><LogOut /> Вийти</button>
             ) : (
@@ -545,13 +545,13 @@ export default function App() {
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-gray-400 mb-3">ТЕКСТ (МІНІМУМ 10 СИМВОЛІВ)</label>
+                <label className="block text-sm font-bold text-gray-400 mb-3">ТЕКСТ</label>
                 <textarea value={postText} onChange={(e) => setPostText(e.target.value)} placeholder="Напиши новину..." className="w-full px-4 py-3 rounded bg-gray-700 text-white placeholder-gray-500 border border-gray-600 focus:border-yellow-500 resize-none h-40 outline-none" />
                 <p className="text-xs text-gray-400 mt-2">{postText.length} символів</p>
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-gray-400 mb-3">ФОТО (ОПЦІОНАЛЬНО)</label>
+                <label className="block text-sm font-bold text-gray-400 mb-3">ФОТО</label>
                 <label className="flex items-center justify-center gap-2 px-6 py-8 rounded border-2 border-dashed border-gray-600 hover:border-yellow-500 cursor-pointer transition">
                   <Upload size={24} />
                   <span>Вибір фото</span>
@@ -559,4 +559,5 @@ export default function App() {
                 </label>
                 {postPhotoPreview && (
                   <div className="mt-4 relative">
-                    <img src={postPhotoPre
+                    <img src={postPhotoPreview} alt="Preview" className="w-full rounded max-h-80 object-cover" />
+                    <button onClick={() => setPostPhotoPreview('')} className="absolute top-2 right-2 bg-red-600 p-2 rounded">
