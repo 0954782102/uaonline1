@@ -59,13 +59,44 @@ const App: React.FC = () => {
   const loadPosts = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/website_posts.json');
+      // ЗАМІНЬ НА СВІЙ URL З PYTHONANYWHERE!
+      // Формат: https://ТвійЮзернейм.pythonanywhere.com/api/posts
+      const API_URL = 'https://artem324.pythonanywhere.com/api/posts';
+      
+      const response = await fetch(API_URL);
       if (response.ok) {
         const data = await response.json();
         setPosts(data);
+        console.log('✅ Пости завантажено:', data.length);
+      } else {
+        console.error('❌ Помилка API:', response.status);
+        // Якщо API не працює - показуємо тестові пости
+        setPosts([
+          {
+            id: 1,
+            server: "05",
+            text: "Привіт! Це тестовий пост. Коли бот запрацює, тут будуть справжні новини!",
+            user_id: 123,
+            username: "Система",
+            created_at: new Date().toISOString(),
+            channel_link: "https://t.me/sutnistua"
+          }
+        ]);
       }
     } catch (error) {
-      console.error('Помилка завантаження:', error);
+      console.error('❌ Помилка завантаження:', error);
+      // Показуємо тестовий пост при помилці
+      setPosts([
+        {
+          id: 1,
+          server: "05",
+          text: "Підключення до API... Перевірте налаштування.",
+          user_id: 123,
+          username: "Система",
+          created_at: new Date().toISOString(),
+          channel_link: "https://t.me/sutnistua"
+        }
+      ]);
     } finally {
       setLoading(false);
     }
