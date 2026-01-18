@@ -40,7 +40,7 @@ const App: React.FC = () => {
   const [postSubmitting, setPostSubmitting] = useState(false);
   const [postError, setPostError] = useState('');
 
-  const [filterServer, setFilterServer] = useState('ALL');
+  const API_URL = 'https://artem324.pythonanywhere.com/api';
 
   useEffect(() => {
     const stored = localStorage.getItem('sutnist_user');
@@ -53,9 +53,12 @@ const App: React.FC = () => {
   const loadPosts = async () => {
     setLoading(true);
     try {
-      const res = await fetch('https://artem324.pythonanywhere.com/api/posts', {
+      const res = await fetch(`${API_URL}/api/posts`, {
         method: 'GET',
-        headers: { 'Accept': 'application/json' }
+        headers: { 
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
       });
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const data = await res.json();
@@ -66,6 +69,7 @@ const App: React.FC = () => {
       }
     } catch (err) {
       console.error('Помилка завантаження постів:', err);
+      setPostError('Помилка завантаження постів');
     }
     setLoading(false);
   };
@@ -79,7 +83,7 @@ const App: React.FC = () => {
     }
 
     try {
-      const res = await fetch('https://artem324.pythonanywhere.com/api/register', {
+      const res = await fetch(`${API_URL}/api/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -119,7 +123,7 @@ const App: React.FC = () => {
     }
 
     try {
-      const res = await fetch('https://artem324.pythonanywhere.com/api/login', {
+      const res = await fetch(`${API_URL}/api/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -184,7 +188,7 @@ const App: React.FC = () => {
         formData.append('photo', postPhoto);
       }
 
-      const res = await fetch('https://artem324.pythonanywhere.com/api/submit-post', {
+      const res = await fetch(`${API_URL}/api/submit-post`, {
         method: 'POST',
         body: formData
       });
