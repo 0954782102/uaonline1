@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { LogIn, LogOut, Home, Newspaper, Zap, Menu, X, Heart, MessageCircle, Upload, AlertCircle, RefreshCw } from 'lucide-react';
 
-const App = () => {
-  const API_URL = 'http://localhost:5000/api';
-
+export default function App() {
   const [user, setUser] = useState(null);
   const [page, setPage] = useState('home');
   const [posts, setPosts] = useState([]);
@@ -25,108 +23,93 @@ const App = () => {
   const [postError, setPostError] = useState('');
 
   const [openComments, setOpenComments] = useState(null);
-  const [comments, setComments] = useState({});
   const [commentText, setCommentText] = useState('');
-  const [userLikes, setUserLikes] = useState([]);
 
   useEffect(() => {
     const stored = localStorage.getItem('sutnist_user');
     if (stored) {
-      setUser(JSON.parse(stored));
+      try {
+        setUser(JSON.parse(stored));
+      } catch {}
     }
     loadPosts();
   }, []);
 
-  const loadPosts = async () => {
+  const getUsers = () => JSON.parse(localStorage.getItem('sutnist_users') || '{}');
+  const saveUsers = (users) => localStorage.setItem('sutnist_users', JSON.stringify(users));
+  const getPosts = () => JSON.parse(localStorage.getItem('sutnist_posts') || '[]');
+  const savePosts = (posts) => localStorage.setItem('sutnist_posts', JSON.stringify(posts));
+
+  const loadPosts = () => {
     setLoading(true);
-    try {
-      const res = await fetch(`${API_URL}/posts`);
-      const data = await res.json();
-      if (data.success && data.posts) {
-        setPosts(data.posts.sort((a, b) => 
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        ));
-      }
-    } catch (err) {
-      console.error('Помилка:', err);
-    }
-    setLoading(false);
+    setTimeout(() => {
+      const allPosts = getPosts();
+      setPosts(allPosts.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
+      setLoading(false);
+    }, 300);
   };
 
-  const handleRegister = async () => {
+  const handleRegister = () => {
     setRegError('');
     if (!regUsername || !regFirstName || !regPassword) {
       setRegError('Заповніть всі поля');
       return;
     }
 
-    try {
-      const res = await fetch(`${API_URL}/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          username: regUsername.toLowerCase().trim(),
-          first_name: regFirstName.trim(),
-          password: regPassword
-        })
-      });
-
-      const data = await res.json();
-      if (data.success) {
-        const newUser = {
-          id: data.user_id,
-          username: regUsername.toLowerCase().trim(),
-          first_name: regFirstName.trim()
-        };
-        setUser(newUser);
-        localStorage.setItem('sutnist_user', JSON.stringify(newUser));
-        setShowAuth(null);
-        setRegUsername('');
-        setRegFirstName('');
-        setRegPassword('');
-      } else {
-        setRegError(data.message || 'Помилка реєстрації');
-      }
-    } catch (err) {
-      setRegError('Помилка підключення до сервера');
+    const users = getUsers();
+    if (users[regUsername.toLowerCase()]) {
+      setRegError('Цей логін вже занятий');
+      return;
     }
+
+    const userId = Date.now();
+    users[regUsername.toLowerCase()] = {
+      id: userId,
+      username: regUsername.toLowerCase(),
+      first_name: regFirstName,
+      password: regPassword
+    };
+
+    saveUsers(users);
+    const newUser = {
+      id: userId,
+      username: regUsername.toLowerCase(),
+      first_name: regFirstName
+    };
+    setUser(newUser);
+    localStorage.setItem('sutnist_user', JSON.stringify(newUser));
+    setShowAuth(null);
+    setRegUsername('');
+    setRegFirstName('');
+    setRegPassword('');
   };
 
-  const handleLogin = async () => {
+  const handleLogin = () => {
     setRegError('');
     if (!regUsername || !regPassword) {
       setRegError('Введіть логін та пароль');
       return;
     }
 
-    try {
-      const res = await fetch(`${API_URL}/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          username: regUsername.toLowerCase().trim(),
-          password: regPassword
-        })
-      });
+    const users = getUsers();
+    const userKey = regUsername.toLowerCase();
 
-      const data = await res.json();
-      if (data.success) {
-        const newUser = {
-          id: data.user_id,
-          username: data.username,
-          first_name: data.first_name
-        };
-        setUser(newUser);
-        localStorage.setItem('sutnist_user', JSON.stringify(newUser));
-        setShowAuth(null);
-        setRegUsername('');
-        setRegPassword('');
-      } else {
-        setRegError(data.message || 'Невірний логін/пароль');
-      }
-    } catch (err) {
-      setRegError('Помилка підключення до сервера');
+    if (!users[userKey] || users[userKey].password !== regPassword) {
+      setRegError('Невірний логін/пароль');
+      return;
     }
+
+    const userData = users[userKey];
+    const newUser = {
+      id: userData.id,
+      username: userData.username,
+      first_name: userData.first_name
+    };
+    setUser(newUser);
+    localStorage.setItem('sutnist_user', JSON.stringify(newUser));
+    setShowAuth(null);
+    setRegUsername('');
+    setRegPassword('');
   };
 
   const handlePhotoSelect = (e) => {
@@ -134,12 +117,12 @@ const App = () => {
     if (file) {
       setPostPhoto(file);
       const reader = new FileReader();
-      reader.onload = (e) => setPostPhotoPreview(e.target.result);
+      reader.onload = (event) => setPostPhotoPreview(event.target.result);
       reader.readAsDataURL(file);
     }
   };
 
-  const handleSubmitPost = async () => {
+  const handleSubmitPost = () => {
     setPostError('');
     if (!user) {
       setPostError('Авторизуйтесь');
@@ -153,90 +136,71 @@ const App = () => {
 
     setPostSubmitting(true);
 
-    try {
-      const formData = new FormData();
-      formData.append('user_id', user.id.toString());
-      formData.append('username', user.username);
-      formData.append('first_name', user.first_name);
-      formData.append('server', postServer);
-      formData.append('text', postText.trim());
-      if (postPhoto) {
-        formData.append('photo', postPhoto);
-      }
+    const newPost = {
+      id: Date.now(),
+      server: postServer,
+      text: postText.trim(),
+      username: user.username,
+      user_id: user.id,
+      created_at: new Date().toISOString(),
+      photo_url: postPhotoPreview || null,
+      likes: [],
+      comments: []
+    };
 
-      const res = await fetch(`${API_URL}/submit-post`, {
-        method: 'POST',
-        body: formData
-      });
+    const allPosts = getPosts();
+    allPosts.push(newPost);
+    savePosts(allPosts);
 
-      const data = await res.json();
-      if (data.success) {
-        alert('✅ Новину опублікований!');
-        setPostText('');
-        setPostPhoto(null);
-        setPostPhotoPreview('');
-        setPostServer('01');
-        setPage('posts');
-        setTimeout(() => loadPosts(), 500);
-      } else {
-        setPostError(data.message || 'Помилка');
-      }
-    } catch (err) {
-      setPostError('Помилка підключення');
-    }
-
+    alert('✅ Пост опублікований!');
+    setPostText('');
+    setPostPhoto(null);
+    setPostPhotoPreview('');
+    setPostServer('01');
+    setPage('posts');
+    loadPosts();
     setPostSubmitting(false);
   };
 
-  const toggleLike = async (postId) => {
+  const toggleLike = (postId) => {
     if (!user) {
       setRegError('Авторизуйтесь!');
       return;
     }
 
-    try {
-      const res = await fetch(`${API_URL}/like-post`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ post_id: postId, user_id: user.id })
-      });
+    const allPosts = getPosts();
+    const post = allPosts.find(p => p.id === postId);
+    if (!post) return;
 
-      const data = await res.json();
-      if (data.success) {
-        const newLikes = userLikes.includes(postId)
-          ? userLikes.filter(id => id !== postId)
-          : [...userLikes, postId];
-        setUserLikes(newLikes);
-        loadPosts();
-      }
-    } catch (err) {
-      console.error('Помилка:', err);
+    if (post.likes.includes(user.id)) {
+      post.likes = post.likes.filter(id => id !== user.id);
+    } else {
+      post.likes.push(user.id);
     }
+
+    savePosts(allPosts);
+    loadPosts();
   };
 
-  const addComment = async (postId) => {
+  const addComment = (postId) => {
     if (!user || !commentText.trim()) return;
 
-    try {
-      const res = await fetch(`${API_URL}/add-comment`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          post_id: postId,
-          user_id: user.id,
-          username: user.username,
-          text: commentText
-        })
-      });
+    const allPosts = getPosts();
+    const post = allPosts.find(p => p.id === postId);
+    if (!post) return;
 
-      const data = await res.json();
-      if (data.success) {
-        setCommentText('');
-        loadPosts();
-      }
-    } catch (err) {
-      console.error('Помилка:', err);
-    }
+    const newComment = {
+      id: Date.now(),
+      user_id: user.id,
+      username: user.username,
+      text: commentText,
+      created_at: new Date().toISOString()
+    };
+
+    post.comments.push(newComment);
+    savePosts(allPosts);
+    setCommentText('');
+    loadPosts();
   };
 
   const handleLogout = () => {
@@ -262,11 +226,10 @@ const App = () => {
 
   return (
     <div className="min-h-screen pb-20 bg-gray-900 text-white" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-      {/* NAV */}
       <nav className="sticky top-0 z-50 px-6 py-4 flex items-center justify-between" style={{ background: 'rgba(255, 255, 255, 0.05)', backdropFilter: 'blur(10px)', borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
         <div className="flex items-center gap-2">
           <div className="bg-yellow-400 text-black font-black px-2 py-1 rounded-lg text-sm">UA</div>
-          <h1 className="text-xl font-black tracking-tighter uppercase" style={{ textShadow: '0 0 10px rgba(250, 204, 21, 0.5)' }}>Сутність UA Online</h1>
+          <h1 className="text-xl font-black tracking-tighter uppercase" style={{ textShadow: '0 0 10px rgba(250, 204, 21, 0.5)' }}>Сутність UA</h1>
         </div>
 
         <div className="hidden md:flex items-center gap-6">
@@ -281,9 +244,6 @@ const App = () => {
               <Zap size={18} /> Надіслати
             </button>
           )}
-          <a href="https://t.me/sutnistua" target="_blank" rel="noopener" className="flex items-center gap-2 text-gray-300 hover:text-yellow-400">
-            <Zap size={18} /> Канал
-          </a>
           {user ? (
             <div className="flex items-center gap-4">
               <span className="text-sm font-semibold text-yellow-500">{user.username}</span>
@@ -303,7 +263,6 @@ const App = () => {
         </button>
       </nav>
 
-      {/* Мобільне меню */}
       {menuOpen && (
         <div className="fixed inset-0 z-40 bg-black/95 pt-24 px-6 md:hidden">
           <div className="flex flex-col gap-6 text-xl font-bold">
@@ -331,7 +290,6 @@ const App = () => {
         </div>
       )}
 
-      {/* ГОЛОВНА */}
       {page === 'home' && (
         <div className="max-w-4xl mx-auto px-6 py-12 text-center space-y-8">
           <h2 className="text-5xl md:text-7xl font-black mb-6 leading-tight">
@@ -342,9 +300,6 @@ const App = () => {
           <p className="text-gray-400 text-lg">Публікуй новини, лайкай та коментуй разом зі спільнотою!</p>
           
           <div className="flex flex-wrap justify-center gap-4">
-            <a href="https://t.me/sutnistua" target="_blank" rel="noopener" className="bg-blue-600 hover:bg-blue-500 px-8 py-4 rounded-2xl font-bold flex items-center gap-2 transition transform hover:scale-105">
-              <Zap /> Наш Канал
-            </a>
             <button onClick={() => setPage('posts')} className="px-8 py-4 rounded-2xl font-bold flex items-center gap-2 transition hover:bg-white/10 transform hover:scale-105" style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.2)' }}>
               <Newspaper /> Переглянути Новини
             </button>
@@ -354,25 +309,13 @@ const App = () => {
               </button>
             )}
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-12">
-            <div className="p-8 rounded-3xl" style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
-              <h4 className="text-xl font-bold mb-3">💬 Активна Спільнота</h4>
-              <p className="text-gray-400 text-sm">Публікуй новини та спілкуйся з тисячами однодумців!</p>
-            </div>
-            <div className="p-8 rounded-3xl" style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
-              <h4 className="text-xl font-bold mb-3">⭐ Лайки та Коментарі</h4>
-              <p className="text-gray-400 text-sm">Оцінюй найцікавіші пості та залишай коментарі!</p>
-            </div>
-          </div>
         </div>
       )}
 
-      {/* НОВИНИ */}
       {page === 'posts' && (
         <div className="max-w-6xl mx-auto px-6 py-12">
-          <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
-            <h2 className="text-3xl md:text-4xl font-black text-yellow-400">📰 Останні Новини</h2>
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-3xl md:text-4xl font-black text-yellow-400">📰 Новини</h2>
             <button onClick={loadPosts} className="px-4 py-2 rounded-xl border transition flex items-center gap-2" style={{ background: 'rgba(59, 130, 246, 0.2)', borderColor: 'rgba(59, 130, 246, 0.3)', color: '#3b82f6' }}>
               <RefreshCw size={16} /> Оновити
             </button>
@@ -380,8 +323,8 @@ const App = () => {
 
           <div className="flex flex-wrap gap-2 mb-8">
             {['ALL', '01', '02', '03', '04', '05'].map(srv => (
-              <button key={srv} onClick={() => setFilterServer(srv)} className={`px-4 py-2 rounded-xl font-bold transition ${filterServer === srv ? 'bg-yellow-500 text-black' : 'text-white hover:bg-white/10'}`} style={filterServer !== srv ? { background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)' } : {}}>
-                {srv === 'ALL' ? '🌐 Всі сервери' : `🎮 Сервер ${srv}`}
+              <button key={srv} onClick={() => setFilterServer(srv)} className={`px-4 py-2 rounded-xl font-bold transition ${filterServer === srv ? 'bg-yellow-500 text-black' : 'text-white'}`} style={filterServer !== srv ? { background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)' } : {}}>
+                {srv === 'ALL' ? '🌐 Всі' : `🎮 ${srv}`}
               </button>
             ))}
           </div>
@@ -398,22 +341,20 @@ const App = () => {
                 <div key={post.id} className="rounded-3xl overflow-hidden transition-all group hover:scale-[1.02]" style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
                   {post.photo_url && (
                     <div className="relative h-64 overflow-hidden">
-                      <img src={post.photo_url} alt="Post" className="w-full h-full object-cover transition-transform group-hover:scale-110" />
-                      <div className="absolute top-4 left-4 bg-yellow-500 text-black px-3 py-1 rounded-lg font-bold text-sm">🎮 Сервер {post.server}</div>
+                      <img src={post.photo_url} alt="Post" className="w-full h-full object-cover" />
+                      <div className="absolute top-4 left-4 bg-yellow-500 text-black px-3 py-1 rounded-lg font-bold text-sm">🎮 {post.server}</div>
                     </div>
                   )}
 
                   <div className="p-6">
                     {!post.photo_url && (
                       <div className="mb-4">
-                        <span className="bg-yellow-500 text-black px-3 py-1 rounded-lg font-bold text-sm inline-block">🎮 Сервер {post.server}</span>
+                        <span className="bg-yellow-500 text-black px-3 py-1 rounded-lg font-bold text-sm inline-block">🎮 {post.server}</span>
                       </div>
                     )}
 
                     <div className="flex items-center justify-between mb-4 pb-4" style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
-                      <div className="flex items-center gap-2 text-gray-400 text-sm">
-                        <span className="font-bold text-yellow-400">{post.username}</span>
-                      </div>
+                      <span className="font-bold text-yellow-400">{post.username}</span>
                       <div className="text-gray-500 text-xs">{formatDate(post.created_at)}</div>
                     </div>
 
@@ -421,20 +362,20 @@ const App = () => {
 
                     <div className="flex items-center gap-4 pt-4" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
                       <button onClick={() => toggleLike(post.id)} className="flex items-center gap-1 text-gray-400 hover:text-red-500 transition">
-                        <Heart size={18} fill={userLikes.includes(post.id) ? 'currentColor' : 'none'} />
-                        <span className="text-sm">{post.likes}</span>
+                        <Heart size={18} fill={post.likes.includes(user?.id) ? 'currentColor' : 'none'} />
+                        <span className="text-sm">{post.likes.length}</span>
                       </button>
                       <button onClick={() => setOpenComments(openComments === post.id ? null : post.id)} className="flex items-center gap-1 text-gray-400 hover:text-blue-500 transition">
                         <MessageCircle size={18} />
-                        <span className="text-sm">{post.comments}</span>
+                        <span className="text-sm">{post.comments.length}</span>
                       </button>
                     </div>
 
                     {openComments === post.id && (
                       <div className="mt-6 pt-6" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
                         <div className="space-y-3 mb-4 max-h-48 overflow-y-auto">
-                          {comments[post.id]?.map((c, idx) => (
-                            <div key={idx} className="text-sm">
+                          {post.comments.map((c) => (
+                            <div key={c.id} className="text-sm">
                               <span className="font-bold text-yellow-400">{c.username}</span>
                               <p className="text-gray-300">{c.text}</p>
                             </div>
@@ -456,54 +397,52 @@ const App = () => {
         </div>
       )}
 
-      {/* НАДІСЛАТИ НОВИНУ */}
       {page === 'submit' && (
         <div className="max-w-2xl mx-auto px-6 py-12">
           <h2 className="text-4xl font-black text-yellow-400 mb-12 text-center">📝 Надіслати Новину</h2>
 
           {!user ? (
-            <div className="p-8 rounded-3xl text-center" style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+            <div className="p-8 rounded-3xl text-center" style={{ background: 'rgba(255, 255, 255, 0.05)' }}>
               <AlertCircle size={48} className="mx-auto mb-4 text-yellow-400" />
-              <p className="text-gray-300 text-lg mb-6">Авторизуйтесь, щоб надіслати новину</p>
+              <p className="text-gray-300 text-lg mb-6">Авторизуйтесь</p>
               <button onClick={() => setShowAuth('login')} className="bg-yellow-500 hover:bg-yellow-400 text-black font-bold px-8 py-3 rounded-xl">Увійти</button>
             </div>
           ) : (
             <div className="space-y-6" style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', padding: '32px', borderRadius: '24px' }}>
               {postError && (
-                <div className="p-4 rounded-xl bg-red-500/20 border border-red-500/50 text-red-300 flex items-center gap-2">
-                  <AlertCircle size={20} />
+                <div className="p-4 rounded-xl bg-red-500/20 border border-red-500/50 text-red-300">
                   {postError}
                 </div>
               )}
 
               <div>
-                <label className="block text-sm font-bold text-gray-400 mb-3 uppercase">Оберіть сервер</label>
+                <label className="block text-sm font-bold text-gray-400 mb-3">ОБЕРІТЬ СЕРВЕР</label>
                 <div className="grid grid-cols-3 gap-2">
                   {['01', '02', '03', '04', '05', 'ALL'].map(srv => (
-                    <button key={srv} onClick={() => setPostServer(srv)} className={`py-2 rounded font-bold transition ${postServer === srv ? 'bg-yellow-500 text-black' : 'text-white'}`} style={postServer !== srv ? { background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)' } : {}}>
-                      {srv === 'ALL' ? '🌐 Всі' : `🎮 ${srv}`}
+                    <button key={srv} onClick={() => setPostServer(srv)} className={`py-2 rounded font-bold ${postServer === srv ? 'bg-yellow-500 text-black' : 'text-white'}`} style={postServer !== srv ? { background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)' } : {}}>
+                      {srv === 'ALL' ? '🌐' : srv}
                     </button>
                   ))}
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-gray-400 mb-3 uppercase">Текст новини (мінімум 10 символів)</label>
-                <textarea value={postText} onChange={(e) => setPostText(e.target.value)} placeholder="Напиши цікаву новину..." className="w-full px-4 py-3 rounded bg-gray-700 text-white placeholder-gray-500 border border-gray-600 focus:border-yellow-500 resize-none h-40 outline-none" />
+                <label className="block text-sm font-bold text-gray-400 mb-3">ТЕКСТ (МІНІМУМ 10 СИМВОЛІВ)</label>
+                <textarea value={postText} onChange={(e) => setPostText(e.target.value)} placeholder="Напиши новину..." className="w-full px-4 py-3 rounded bg-gray-700 text-white placeholder-gray-500 border border-gray-600 focus:border-yellow-500 resize-none h-40 outline-none" />
                 <p className="text-xs text-gray-400 mt-2">{postText.length} символів</p>
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-gray-400 mb-3 uppercase">Фото (опціонально)</label>
+                <label className="block text-sm font-bold text-gray-400 mb-3">ФОТО (ОПЦІОНАЛЬНО)</label>
                 <label className="flex items-center justify-center gap-2 px-6 py-8 rounded border-2 border-dashed border-gray-600 hover:border-yellow-500 cursor-pointer transition">
-                  <Upload size={24} className="text-gray-400" />
-                  <span className="text-gray-300">Натисніть для вибору фото</span>
+                  <Upload size={24} />
+                  <span>Вибір фото</span>
                   <input type="file" accept="image/*" onChange={handlePhotoSelect} className="hidden" />
                 </label>
                 {postPhotoPreview && (
                   <div className="mt-4 relative">
                     <img src={postPhotoPreview} alt="Preview" className="w-full rounded max-h-80 object-cover" />
-                    <button onClick={() => { setPostPhoto(null); setPostPhotoPreview(''); }} className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 p-2 rounded">
+                    <button onClick={() => { setPostPhoto(null); setPostPhotoPreview(''); }} className="absolute top-2 right-2 bg-red-600 p-2 rounded">
                       <X size={20} />
                     </button>
                   </div>
@@ -511,14 +450,13 @@ const App = () => {
               </div>
 
               <button onClick={handleSubmitPost} disabled={postSubmitting} className="w-full bg-yellow-500 hover:bg-yellow-400 disabled:bg-gray-600 text-black font-bold py-3 rounded">
-                {postSubmitting ? '⏳ Публікується...' : '✅ ОПУБЛІКУВАТИ'}
+                {postSubmitting ? 'Публікується...' : '✅ ОПУБЛІКУВАТИ'}
               </button>
             </div>
           )}
         </div>
       )}
 
-      {/* AUTH MODAL */}
       {showAuth && (
         <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
           <div className="bg-gray-800 rounded-lg p-8 w-full max-w-md space-y-6 relative">
@@ -529,8 +467,7 @@ const App = () => {
             <h2 className="text-2xl font-black">{showAuth === 'login' ? 'Вхід' : 'Реєстрація'}</h2>
 
             {regError && (
-              <div className="bg-red-900 border border-red-700 text-red-200 px-4 py-3 rounded flex items-center gap-2">
-                <AlertCircle size={20} />
+              <div className="bg-red-900 border border-red-700 text-red-200 px-4 py-3 rounded">
                 {regError}
               </div>
             )}
@@ -550,7 +487,7 @@ const App = () => {
 
               <div>
                 <label className="block text-sm font-bold mb-2">Пароль</label>
-                <input type="password" value={regPassword} onChange={(e) => setRegPassword(e.target.value)} placeholder="Ваш пароль" className="w-full px-4 py-2 rounded bg-gray-700 text-white placeholder-gray-500 border border-gray-600 focus:border-yellow-500 outline-none" />
+                <input type="password" value={regPassword} onChange={(e) => setRegPassword(e.target.value)} placeholder="Пароль" className="w-full px-4 py-2 rounded bg-gray-700 text-white placeholder-gray-500 border border-gray-600 focus:border-yellow-500 outline-none" />
               </div>
 
               <button onClick={showAuth === 'login' ? handleLogin : handleRegister} className="w-full bg-yellow-500 hover:bg-yellow-400 text-black font-bold py-2 rounded">
@@ -560,32 +497,14 @@ const App = () => {
 
             <div className="text-center text-sm text-gray-400">
               {showAuth === 'login' ? (
-                <p>
-                  Ще немає акаунту?{' '}
-                  <button onClick={() => { setShowAuth('register'); setRegError(''); }} className="text-yellow-400 hover:underline font-bold">
-                    Зареєструватися
-                  </button>
-                </p>
+                <p>Ще немає? <button onClick={() => { setShowAuth('register'); setRegError(''); }} className="text-yellow-400 font-bold">Реєстр</button></p>
               ) : (
-                <p>
-                  Вже є акаунт?{' '}
-                  <button onClick={() => { setShowAuth('login'); setRegError(''); }} className="text-yellow-400 hover:underline font-bold">
-                    Увійти
-                  </button>
-                </p>
+                <p>Вже є? <button onClick={() => { setShowAuth('login'); setRegError(''); }} className="text-yellow-400 font-bold">Вхід</button></p>
               )}
             </div>
           </div>
         </div>
       )}
-
-      <style>{`
-        @keyframes fall {
-          to { transform: translateY(100vh); }
-        }
-      `}</style>
     </div>
   );
-};
-
-export default App;
+}
