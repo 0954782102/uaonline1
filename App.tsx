@@ -53,7 +53,11 @@ const App: React.FC = () => {
   const loadPosts = async () => {
     setLoading(true);
     try {
-      const res = await fetch('https://artem324.pythonanywhere.com/api/posts');
+      const res = await fetch('https://artem324.pythonanywhere.com/api/posts', {
+        method: 'GET',
+        headers: { 'Accept': 'application/json' }
+      });
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const data = await res.json();
       if (data.success && data.posts) {
         setPosts(data.posts.sort((a: Post, b: Post) => 
@@ -140,7 +144,7 @@ const App: React.FC = () => {
         setRegError(data.message || 'Невірний логін/пароль');
       }
     } catch (err) {
-      setRegError('Помилка підключення');
+      setRegError('❌ Помилка підключення до сервера');
     }
   };
 
@@ -193,13 +197,13 @@ const App: React.FC = () => {
         setPostPhotoPreview('');
         setPostServer('01');
         setPage('posts');
-        loadPosts();
+        setTimeout(() => loadPosts(), 500);
       } else {
-        setPostError(data.message || 'Помилка');
+        setPostError(data.message || 'Помилка публікації');
       }
     } catch (err) {
-      setPostError('Помилка підключення');
-      console.error(err);
+      setPostError('❌ Помилка підключення до сервера');
+      console.error('Помилка:', err);
     }
 
     setPostSubmitting(false);
@@ -425,7 +429,7 @@ const App: React.FC = () => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {filteredPosts.map((post) => (
-                  <div key={post.id} className="bg-gray-800 rounded-lg overflow-hidden hover:shadow-lg transition">
+                  <div key={post.id} className="bg-gray-800 rounded-lg overflow-hidden hover:shadow-lg transition border border-gray-700">
                     {post.photo_url && (
                       <img
                         src={post.photo_url}
@@ -434,26 +438,26 @@ const App: React.FC = () => {
                       />
                     )}
                     <div className="p-6 space-y-4">
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between flex-wrap gap-2">
                         <span className="bg-yellow-500 text-black px-3 py-1 rounded font-bold text-sm">
                           🎮 Сервер {post.server}
                         </span>
                         <span className="text-xs text-gray-400">{formatDate(post.created_at)}</span>
                       </div>
 
-                      <div>
-                        <p className="text-sm text-gray-400 mb-2">👤 {post.username}</p>
-                        <p className="text-white whitespace-pre-wrap">{post.text}</p>
+                      <div className="border-t border-gray-700 pt-4">
+                        <p className="text-sm text-gray-300 mb-2">👤 <span className="font-bold text-yellow-400">{post.username}</span></p>
+                        <p className="text-white whitespace-pre-wrap leading-relaxed">{post.text}</p>
                       </div>
 
-                      <div className="flex items-center gap-4 pt-4 border-t border-gray-700">
-                        <button className="flex items-center gap-2 text-gray-400 hover:text-red-500 transition">
-                          <Heart size={18} />
-                          <span className="text-sm">{post.likes}</span>
+                      <div className="flex items-center gap-6 pt-4 border-t border-gray-700">
+                        <button className="flex items-center gap-2 text-gray-400 hover:text-red-500 transition font-bold">
+                          <Heart size={20} />
+                          <span className="text-sm">{post.likes || 0}</span>
                         </button>
-                        <button className="flex items-center gap-2 text-gray-400 hover:text-blue-500 transition">
-                          <MessageCircle size={18} />
-                          <span className="text-sm">{post.comments}</span>
+                        <button className="flex items-center gap-2 text-gray-400 hover:text-blue-500 transition font-bold">
+                          <MessageCircle size={20} />
+                          <span className="text-sm">{post.comments || 0}</span>
                         </button>
                       </div>
                     </div>
