@@ -19,13 +19,16 @@ interface Post {
 }
 
 const App: React.FC = () => {
+  const API_URL = 'https://artem324.pythonanywhere.com';
+
   const [user, setUser] = useState<User | null>(null);
   const [page, setPage] = useState<'home' | 'posts' | 'submit'>('home');
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [filterServer, setFilterServer] = useState('ALL');
 
-  // Auth modal
+  // Auth
   const [showAuth, setShowAuth] = useState<'login' | 'register' | null>(null);
   const [regUsername, setRegUsername] = useState('');
   const [regFirstName, setRegFirstName] = useState('');
@@ -40,8 +43,6 @@ const App: React.FC = () => {
   const [postSubmitting, setPostSubmitting] = useState(false);
   const [postError, setPostError] = useState('');
 
-  const API_URL = 'https://artem324.pythonanywhere.com/api';
-
   useEffect(() => {
     const stored = localStorage.getItem('sutnist_user');
     if (stored) {
@@ -53,14 +54,7 @@ const App: React.FC = () => {
   const loadPosts = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/posts`, {
-        method: 'GET',
-        headers: { 
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        }
-      });
-      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+      const res = await fetch(`${API_URL}/api/posts`);
       const data = await res.json();
       if (data.success && data.posts) {
         setPosts(data.posts.sort((a: Post, b: Post) => 
@@ -68,15 +62,13 @@ const App: React.FC = () => {
         ));
       }
     } catch (err) {
-      console.error('Помилка завантаження постів:', err);
-      setPostError('Помилка завантаження постів');
+      console.error('Помилка:', err);
     }
     setLoading(false);
   };
 
   const handleRegister = async () => {
     setRegError('');
-
     if (!regUsername || !regFirstName || !regPassword) {
       setRegError('Заповніть всі поля');
       return;
@@ -107,7 +99,7 @@ const App: React.FC = () => {
         setRegFirstName('');
         setRegPassword('');
       } else {
-        setRegError(data.message || 'Помилка реєстрації');
+        setRegError(data.message || 'Помилка');
       }
     } catch (err) {
       setRegError('Помилка підключення');
@@ -116,7 +108,6 @@ const App: React.FC = () => {
 
   const handleLogin = async () => {
     setRegError('');
-
     if (!regUsername || !regPassword) {
       setRegError('Введіть логін та пароль');
       return;
@@ -148,7 +139,7 @@ const App: React.FC = () => {
         setRegError(data.message || 'Невірний логін/пароль');
       }
     } catch (err) {
-      setRegError('❌ Помилка підключення до сервера');
+      setRegError('Помилка підключення');
     }
   };
 
@@ -164,7 +155,6 @@ const App: React.FC = () => {
 
   const handleSubmitPost = async () => {
     setPostError('');
-
     if (!user) {
       setPostError('Авторизуйтесь');
       return;
@@ -203,11 +193,10 @@ const App: React.FC = () => {
         setPage('posts');
         setTimeout(() => loadPosts(), 500);
       } else {
-        setPostError(data.message || 'Помилка публікації');
+        setPostError(data.message || 'Помилка');
       }
     } catch (err) {
-      setPostError('❌ Помилка підключення до сервера');
-      console.error('Помилка:', err);
+      setPostError('Помилка підключення');
     }
 
     setPostSubmitting(false);
@@ -235,7 +224,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+    <div className="min-h-screen bg-gray-900 text-white">
       {/* NAV */}
       <nav className="sticky top-0 z-50 bg-gray-800 border-b border-gray-700 px-4 py-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
@@ -244,32 +233,25 @@ const App: React.FC = () => {
             <h1 className="text-2xl font-black">Сутність UA</h1>
           </div>
 
-          {/* Desktop Menu */}
           <div className="hidden md:flex items-center gap-6">
             <button
               onClick={() => setPage('home')}
-              className={`flex items-center gap-2 px-4 py-2 rounded transition ${
-                page === 'home' ? 'bg-yellow-500 text-black' : 'hover:bg-gray-700'
-              }`}
+              className={`px-4 py-2 rounded ${page === 'home' ? 'bg-yellow-500 text-black' : 'hover:bg-gray-700'}`}
             >
-              <Home size={18} /> Головна
+              Головна
             </button>
             <button
               onClick={() => setPage('posts')}
-              className={`flex items-center gap-2 px-4 py-2 rounded transition ${
-                page === 'posts' ? 'bg-yellow-500 text-black' : 'hover:bg-gray-700'
-              }`}
+              className={`px-4 py-2 rounded ${page === 'posts' ? 'bg-yellow-500 text-black' : 'hover:bg-gray-700'}`}
             >
-              <Newspaper size={18} /> Новини
+              Новини
             </button>
             {user && (
               <button
                 onClick={() => setPage('submit')}
-                className={`flex items-center gap-2 px-4 py-2 rounded transition ${
-                  page === 'submit' ? 'bg-yellow-500 text-black' : 'hover:bg-gray-700'
-                }`}
+                className={`px-4 py-2 rounded ${page === 'submit' ? 'bg-yellow-500 text-black' : 'hover:bg-gray-700'}`}
               >
-                <Zap size={18} /> Надіслати
+                Надіслати
               </button>
             )}
 
@@ -278,62 +260,45 @@ const App: React.FC = () => {
                 <span className="text-sm font-bold text-yellow-400">{user.username}</span>
                 <button
                   onClick={handleLogout}
-                  className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded transition flex items-center gap-2"
+                  className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded"
                 >
-                  <LogOut size={16} /> Вийти
+                  Вийти
                 </button>
               </div>
             ) : (
               <button
                 onClick={() => setShowAuth('login')}
-                className="bg-yellow-500 hover:bg-yellow-400 text-black font-bold px-6 py-2 rounded transition flex items-center gap-2"
+                className="bg-yellow-500 hover:bg-yellow-400 text-black font-bold px-6 py-2 rounded"
               >
-                <LogIn size={18} /> Увійти
+                Увійти
               </button>
             )}
           </div>
 
-          {/* Mobile Menu Button */}
           <button className="md:hidden" onClick={() => setMenuOpen(!menuOpen)}>
             {menuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
 
-        {/* Mobile Menu */}
         {menuOpen && (
           <div className="md:hidden mt-4 space-y-2">
-            <button
-              onClick={() => { setPage('home'); setMenuOpen(false); }}
-              className="block w-full text-left px-4 py-2 hover:bg-gray-700 rounded"
-            >
+            <button onClick={() => { setPage('home'); setMenuOpen(false); }} className="block w-full text-left px-4 py-2 hover:bg-gray-700 rounded">
               Головна
             </button>
-            <button
-              onClick={() => { setPage('posts'); setMenuOpen(false); }}
-              className="block w-full text-left px-4 py-2 hover:bg-gray-700 rounded"
-            >
+            <button onClick={() => { setPage('posts'); setMenuOpen(false); }} className="block w-full text-left px-4 py-2 hover:bg-gray-700 rounded">
               Новини
             </button>
             {user && (
-              <button
-                onClick={() => { setPage('submit'); setMenuOpen(false); }}
-                className="block w-full text-left px-4 py-2 hover:bg-gray-700 rounded"
-              >
+              <button onClick={() => { setPage('submit'); setMenuOpen(false); }} className="block w-full text-left px-4 py-2 hover:bg-gray-700 rounded">
                 Надіслати
               </button>
             )}
             {user ? (
-              <button
-                onClick={() => { handleLogout(); setMenuOpen(false); }}
-                className="block w-full text-left px-4 py-2 text-red-400 hover:bg-gray-700 rounded"
-              >
+              <button onClick={() => { handleLogout(); setMenuOpen(false); }} className="block w-full text-left px-4 py-2 text-red-400 hover:bg-gray-700 rounded">
                 Вийти
               </button>
             ) : (
-              <button
-                onClick={() => { setShowAuth('login'); setMenuOpen(false); }}
-                className="block w-full text-left px-4 py-2 text-yellow-400 hover:bg-gray-700 rounded"
-              >
+              <button onClick={() => { setShowAuth('login'); setMenuOpen(false); }} className="block w-full text-left px-4 py-2 text-yellow-400 hover:bg-gray-700 rounded">
                 Увійти
               </button>
             )}
@@ -343,89 +308,63 @@ const App: React.FC = () => {
 
       {/* CONTENT */}
       <div className="max-w-6xl mx-auto px-4 py-8">
-        {/* HOME PAGE */}
         {page === 'home' && (
           <div className="text-center space-y-8">
-            <div className="space-y-4">
-              <h2 className="text-6xl font-black">🎄 СВЯТКОВА СУТНІСТЬ</h2>
-              <p className="text-xl text-gray-400">Офіційний портал спільноти UA ONLINE 2025</p>
-            </div>
-
+            <h2 className="text-6xl font-black">🎄 СВЯТКОВА СУТНІСТЬ</h2>
+            <p className="text-xl text-gray-400">Офіційний портал спільноти UA ONLINE 2025</p>
             <div className="flex flex-wrap justify-center gap-4">
-              <a
-                href="https://t.me/sutnistua"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-blue-600 hover:bg-blue-700 px-8 py-3 rounded font-bold transition flex items-center gap-2"
-              >
-                <Zap size={20} /> Наш Канал
+              <a href="https://t.me/sutnistua" target="_blank" rel="noopener noreferrer" className="bg-blue-600 hover:bg-blue-700 px-8 py-3 rounded font-bold">
+                Наш Канал
               </a>
-              <button
-                onClick={() => setPage('posts')}
-                className="bg-gray-700 hover:bg-gray-600 px-8 py-3 rounded font-bold transition"
-              >
+              <button onClick={() => setPage('posts')} className="bg-gray-700 hover:bg-gray-600 px-8 py-3 rounded font-bold">
                 Переглянути Новини
               </button>
               {!user && (
-                <button
-                  onClick={() => setShowAuth('register')}
-                  className="bg-green-600 hover:bg-green-700 px-8 py-3 rounded font-bold transition"
-                >
+                <button onClick={() => setShowAuth('register')} className="bg-green-600 hover:bg-green-700 px-8 py-3 rounded font-bold">
                   Реєстрація
                 </button>
               )}
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-12">
               <div className="bg-gray-800 p-6 rounded-lg">
                 <h3 className="text-xl font-bold mb-4">📝 Як це працює</h3>
                 <ol className="text-left text-gray-300 space-y-2">
                   <li>1. Реєструйся на сайті</li>
                   <li>2. Перейди на "Надіслати"</li>
-                  <li>3. Напиши новину + вибери сервер</li>
+                  <li>3. Напиши новину</li>
                   <li>4. Адміни перевіряють</li>
                   <li>5. Опублікується у каналі</li>
                 </ol>
               </div>
               <div className="bg-gray-800 p-6 rounded-lg">
                 <h3 className="text-xl font-bold mb-4">💬 Обговорення</h3>
-                <p className="text-gray-300">Лайкай, коментуй та обговорюй новини на сайті разом із спільнотою!</p>
+                <p className="text-gray-300">Лайкай та коментуй новини!</p>
               </div>
             </div>
           </div>
         )}
 
-        {/* POSTS PAGE */}
         {page === 'posts' && (
           <div className="space-y-6">
             <div className="flex items-center justify-between flex-wrap gap-4">
               <h2 className="text-4xl font-black">📰 Новини</h2>
-              <button
-                onClick={loadPosts}
-                className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded flex items-center gap-2"
-              >
+              <button onClick={loadPosts} className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded flex items-center gap-2">
                 <RefreshCw size={18} /> Оновити
               </button>
             </div>
 
-            {/* Filter */}
             <div className="flex flex-wrap gap-2">
               {['ALL', '01', '02', '03', '04', '05'].map((srv) => (
                 <button
                   key={srv}
                   onClick={() => setFilterServer(srv)}
-                  className={`px-4 py-2 rounded font-bold transition ${
-                    filterServer === srv
-                      ? 'bg-yellow-500 text-black'
-                      : 'bg-gray-700 hover:bg-gray-600'
-                  }`}
+                  className={`px-4 py-2 rounded font-bold ${filterServer === srv ? 'bg-yellow-500 text-black' : 'bg-gray-700 hover:bg-gray-600'}`}
                 >
                   {srv === 'ALL' ? '🌐 Всі' : `🎮 ${srv}`}
                 </button>
               ))}
             </div>
 
-            {/* Posts */}
             {loading ? (
               <div className="text-center py-12">⏳ Завантаження...</div>
             ) : filteredPosts.length === 0 ? (
@@ -433,33 +372,27 @@ const App: React.FC = () => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {filteredPosts.map((post) => (
-                  <div key={post.id} className="bg-gray-800 rounded-lg overflow-hidden hover:shadow-lg transition border border-gray-700">
+                  <div key={post.id} className="bg-gray-800 rounded-lg overflow-hidden border border-gray-700">
                     {post.photo_url && (
-                      <img
-                        src={post.photo_url}
-                        alt="Post"
-                        className="w-full h-64 object-cover"
-                      />
+                      <img src={post.photo_url} alt="Post" className="w-full h-64 object-cover" />
                     )}
                     <div className="p-6 space-y-4">
-                      <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div className="flex items-center justify-between">
                         <span className="bg-yellow-500 text-black px-3 py-1 rounded font-bold text-sm">
                           🎮 Сервер {post.server}
                         </span>
                         <span className="text-xs text-gray-400">{formatDate(post.created_at)}</span>
                       </div>
-
                       <div className="border-t border-gray-700 pt-4">
                         <p className="text-sm text-gray-300 mb-2">👤 <span className="font-bold text-yellow-400">{post.username}</span></p>
-                        <p className="text-white whitespace-pre-wrap leading-relaxed">{post.text}</p>
+                        <p className="text-white whitespace-pre-wrap">{post.text}</p>
                       </div>
-
                       <div className="flex items-center gap-6 pt-4 border-t border-gray-700">
-                        <button className="flex items-center gap-2 text-gray-400 hover:text-red-500 transition font-bold">
+                        <button className="flex items-center gap-2 text-gray-400 hover:text-red-500">
                           <Heart size={20} />
                           <span className="text-sm">{post.likes || 0}</span>
                         </button>
-                        <button className="flex items-center gap-2 text-gray-400 hover:text-blue-500 transition font-bold">
+                        <button className="flex items-center gap-2 text-gray-400 hover:text-blue-500">
                           <MessageCircle size={20} />
                           <span className="text-sm">{post.comments || 0}</span>
                         </button>
@@ -472,17 +405,13 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {/* SUBMIT POST PAGE */}
         {page === 'submit' && (
           <div className="max-w-2xl mx-auto">
             {!user ? (
               <div className="bg-gray-800 p-8 rounded-lg text-center space-y-4">
                 <AlertCircle size={48} className="mx-auto text-yellow-500" />
                 <p className="text-lg">Авторизуйтесь, щоб надіслати новину</p>
-                <button
-                  onClick={() => setShowAuth('login')}
-                  className="bg-yellow-500 hover:bg-yellow-400 text-black font-bold px-8 py-3 rounded"
-                >
+                <button onClick={() => setShowAuth('login')} className="bg-yellow-500 hover:bg-yellow-400 text-black font-bold px-8 py-3 rounded">
                   Увійти
                 </button>
               </div>
@@ -497,7 +426,6 @@ const App: React.FC = () => {
                   </div>
                 )}
 
-                {/* Server Select */}
                 <div>
                   <label className="block text-sm font-bold mb-3">Оберіть сервер</label>
                   <div className="grid grid-cols-3 gap-2">
@@ -505,11 +433,7 @@ const App: React.FC = () => {
                       <button
                         key={srv}
                         onClick={() => setPostServer(srv)}
-                        className={`py-2 rounded font-bold transition ${
-                          postServer === srv
-                            ? 'bg-yellow-500 text-black'
-                            : 'bg-gray-700 hover:bg-gray-600'
-                        }`}
+                        className={`py-2 rounded font-bold ${postServer === srv ? 'bg-yellow-500 text-black' : 'bg-gray-700 hover:bg-gray-600'}`}
                       >
                         {srv === 'ALL' ? '🌐 Всі' : `🎮 ${srv}`}
                       </button>
@@ -517,30 +441,23 @@ const App: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Text */}
                 <div>
                   <label className="block text-sm font-bold mb-3">Текст новини (мінімум 10 символів)</label>
                   <textarea
                     value={postText}
                     onChange={(e) => setPostText(e.target.value)}
                     placeholder="Напиши цікаву новину..."
-                    className="w-full px-4 py-3 rounded bg-gray-700 text-white placeholder-gray-500 border border-gray-600 focus:border-yellow-500 focus:outline-none resize-none h-40"
+                    className="w-full px-4 py-3 rounded bg-gray-700 text-white placeholder-gray-500 border border-gray-600 focus:border-yellow-500 resize-none h-40"
                   />
                   <p className="text-xs text-gray-400 mt-2">{postText.length} символів</p>
                 </div>
 
-                {/* Photo */}
                 <div>
                   <label className="block text-sm font-bold mb-3">Фото (опціонально)</label>
-                  <label className="flex items-center justify-center gap-2 px-6 py-8 rounded border-2 border-dashed border-gray-600 hover:border-yellow-500 cursor-pointer transition">
+                  <label className="flex items-center justify-center gap-2 px-6 py-8 rounded border-2 border-dashed border-gray-600 hover:border-yellow-500 cursor-pointer">
                     <Upload size={24} className="text-gray-400" />
                     <span className="text-gray-300">Натисніть для вибору фото</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handlePhotoSelect}
-                      className="hidden"
-                    />
+                    <input type="file" accept="image/*" onChange={handlePhotoSelect} className="hidden" />
                   </label>
                   {postPhotoPreview && (
                     <div className="mt-4 relative">
@@ -558,7 +475,7 @@ const App: React.FC = () => {
                 <button
                   onClick={handleSubmitPost}
                   disabled={postSubmitting}
-                  className="w-full bg-yellow-500 hover:bg-yellow-400 disabled:bg-gray-600 text-black font-bold py-3 rounded transition"
+                  className="w-full bg-yellow-500 hover:bg-yellow-400 disabled:bg-gray-600 text-black font-bold py-3 rounded"
                 >
                   {postSubmitting ? '⏳ Відправляється...' : '✅ НАДІСЛАТИ'}
                 </button>
@@ -572,10 +489,7 @@ const App: React.FC = () => {
       {showAuth && (
         <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
           <div className="bg-gray-800 rounded-lg p-8 w-full max-w-md space-y-6 relative">
-            <button
-              onClick={() => setShowAuth(null)}
-              className="absolute top-4 right-4 hover:bg-gray-700 p-2 rounded"
-            >
+            <button onClick={() => setShowAuth(null)} className="absolute top-4 right-4 hover:bg-gray-700 p-2 rounded">
               <X size={24} />
             </button>
 
@@ -628,7 +542,7 @@ const App: React.FC = () => {
 
               <button
                 onClick={showAuth === 'login' ? handleLogin : handleRegister}
-                className="w-full bg-yellow-500 hover:bg-yellow-400 text-black font-bold py-2 rounded transition"
+                className="w-full bg-yellow-500 hover:bg-yellow-400 text-black font-bold py-2 rounded"
               >
                 {showAuth === 'login' ? 'Увійти' : 'Зареєструватися'}
               </button>
@@ -638,20 +552,14 @@ const App: React.FC = () => {
               {showAuth === 'login' ? (
                 <p>
                   Ще немає акаунту?{' '}
-                  <button
-                    onClick={() => { setShowAuth('register'); setRegError(''); }}
-                    className="text-yellow-400 hover:underline font-bold"
-                  >
+                  <button onClick={() => { setShowAuth('register'); setRegError(''); }} className="text-yellow-400 hover:underline font-bold">
                     Зареєструватися
                   </button>
                 </p>
               ) : (
                 <p>
                   Вже є акаунт?{' '}
-                  <button
-                    onClick={() => { setShowAuth('login'); setRegError(''); }}
-                    className="text-yellow-400 hover:underline font-bold"
-                  >
+                  <button onClick={() => { setShowAuth('login'); setRegError(''); }} className="text-yellow-400 hover:underline font-bold">
                     Увійти
                   </button>
                 </p>
