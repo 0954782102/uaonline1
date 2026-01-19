@@ -19,12 +19,13 @@ import {
 // КРОК 1: ВСТАВ СВОЇ КЛЮЧІ З FIREBASE СЮДИ
 // ==========================================
 const firebaseConfig = {
-  apiKey: "AIzaSyDxKct-kavvbt5vRNTswjSiBXc4lFbtdJo",
+   apiKey: "AIzaSyDxKct-kavvbt5vRNTswjSiBXc4lFbtdJo",
   authDomain: "ua-online-3c6f1.firebaseapp.com",
   projectId: "ua-online-3c6f1",
   storageBucket: "ua-online-3c6f1.firebasestorage.app",
   messagingSenderId: "244081882715",
-  appId: "1:244081882715:web:c7064cdcf4ae887c39b17e"
+  appId: "1:244081882715:web:c7064cdcf4ae887c39b17e",
+  measurementId: "G-N61RSRCSXT"
 };
 
 // Перевірка чи вставлені ключі
